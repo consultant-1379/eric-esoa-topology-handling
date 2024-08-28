@@ -1,0 +1,124 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+modelVersion: 2.0
+
+description: "Topology Handling Application containing the Common Topology Service (CTS) provided by EAI"
+
+docker-images:
+  - adp-release-auto: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-adp-release-auto:${env.RELEASE_AUTO_TAG}
+
+# List of constants
+properties:
+
+  # Docker Image
+  - image-registry-path: armdocker.rnd.ericsson.se
+  - eai-artemis-image-dev: ${image-registry-path}/proj-so-snapshots/eric-esoa-topology/eric-oss-jms-svc-amq:${env.VERSION}
+  - eai-infrastructure-image-dev: ${image-registry-path}/proj-so-snapshots/eric-esoa-topology/eric-oss-cmn-topology-svc-core:${env.VERSION}
+  - eai-artemis-image-drop: ${image-registry-path}/proj-esoa-so/eric-esoa-topology/eric-oss-jms-svc-amq:${env.VERSION}
+  - eai-infrastructure-image-drop: ${image-registry-path}/proj-esoa-so/eric-esoa-topology/eric-oss-cmn-topology-svc-core:${env.VERSION}
+
+  # Helm Chart
+  - helm-chart-name: eric-oss-common-topology-svc
+  - helm-chart-file-name: ${helm-chart-name}-${env.VERSION}.tgz
+  - helm-chart-repo-server-path: https://arm.sero.gic.ericsson.se/artifactory
+  - helm-chart-dev-repo: ${helm-chart-repo-server-path}/proj-so-snapshots-helm
+  - helm-chart-drop-repo: ${helm-chart-repo-server-path}/proj-so-gs-all-helm-local
+
+env:
+  - VERSION
+  - GERRIT_PATCHSET_REVISION (default=HEAD)
+  - HOME
+  - PWD
+  - RELEASE (default=false)
+  - USER (default=local)
+  - DOCKER_NETWORK (default=--network host)
+  - DOCKER_VOLUME_MAPPING_PASSWD (default=--volume ${env.HOME}/mypasswd:/etc/passwd:ro)
+
+  # Credentials
+  - DOCKER_CONFIG (default=${env.HOME}/.docker/config.json)
+  - GERRIT_USERNAME
+  - GERRIT_PASSWORD
+  - GERRIT_CHANGE_NUMBER
+  - SERO_ARTIFACTORY_REPO_USER
+  - SERO_ARTIFACTORY_REPO_PASS
+
+  # Default docker image tags
+  - RELEASE_AUTO_TAG (default=latest)
+
+rules:
+  clean:
+    - task: rm
+      cmd:
+        - rm -rf .bob/
+        - rm -rf build/
+        - rm -f artifact.properties
+
+  init:
+    - task: artifacts-properties
+      docker-image: adp-release-auto
+      cmd: generate-adp-artifacts
+        --chart-name ${helm-chart-name}
+        --chart-version ${env.VERSION}
+        --chart-repo ${helm-chart-drop-repo}
+    - task: commit-info
+      cmd:
+        - echo "GIT_TAG=$(git log -1 --pretty=format:'%h')" >> artifact.properties
+        - echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')" >> artifact.properties
+        - echo "GIT_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')" >> artifact.properties
+        - echo "GIT_COMMIT_SUMMARY=$(git log -1 --pretty=format:'%s')" >> artifact.properties
+
+  pull-images:
+    - task: pull-images
+      cmd:
+        - docker pull ${eai-artemis-image-dev}
+        - docker pull ${eai-infrastructure-image-dev}
+    - task: list-images
+      cmd: docker image ls | grep ${env.VERSION}
+
+  tag-images:
+    - task: tag-images
+      cmd:
+        - docker tag ${eai-artemis-image-dev} ${eai-artemis-image-drop}
+        - docker tag ${eai-infrastructure-image-dev} ${eai-infrastructure-image-drop}
+
+  publish-images:
+    - task: publish-images
+      cmd:
+        - docker push ${eai-artemis-image-drop}
+        - docker push ${eai-infrastructure-image-drop}
+
+  remove-images:
+    - task: remove-images
+      cmd:
+        - docker image rm -f ${eai-artemis-image-dev}
+        - docker image rm -f ${eai-infrastructure-image-dev}
+        - docker image rm -f ${eai-artemis-image-drop}
+        - docker image rm -f ${eai-infrastructure-image-drop}
+    - task: list-images
+      cmd: docker image ls | grep ${env.VERSION} || true
+
+  pull-helm-chart:
+    - task: helm-pull
+      docker-image: adp-release-auto
+      cmd:
+        - curl -u '${env.SERO_ARTIFACTORY_REPO_USER}:${env.SERO_ARTIFACTORY_REPO_PASS}' ${helm-chart-dev-repo}/${helm-chart-name}/${helm-chart-file-name} --output .bob/${helm-chart-file-name}
+
+  publish-helm-chart:
+    - task: helm-upload
+      docker-image: adp-release-auto
+      cmd:
+        - curl -u '${env.SERO_ARTIFACTORY_REPO_USER}:${env.SERO_ARTIFACTORY_REPO_PASS}' -X PUT -T .bob/${helm-chart-file-name} ${helm-chart-drop-repo}/${helm-chart-name}/${helm-chart-file-name}

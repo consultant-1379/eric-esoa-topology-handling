@@ -1,0 +1,170 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{ if .Values.alarms.enabled }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "eric-esoa-topology-handling.name" . }}-unavailable-pm-config
+  labels:
+    bss.ericsson.com/bamPMconfigAggregator: "true"
+    {{- include "eric-esoa-topology-handling.kubernetes-io-info" .| nindent 4 }}
+  annotations:
+    {{- include "eric-esoa-topology-handling.helm-annotations" .| nindent 4 }}
+data:
+  pmThreshold.json: |-
+    {
+      "data": {
+        "ericsson-pm:pm": {
+          "job": [
+            {
+              "granularity-period": "one-min",
+              "name": "eric-esoa-common-topology-svc-unavailable-job",
+              "requested-job-state": "active",
+              "type": "threshold-job",
+              "measurement-reader": [
+                {
+                  "group-ref": "eric-esoa-th-alarm-group",
+                  "measurement-type-ref": "eric-esoa-common-topology-svc-unavailable",
+                  "name": "eric-esoa-common-topology-svc-unavailable-reader",
+                  "threshold-monitoring": [
+                    {
+                      "name": "eric-esoa-common-topology-svc-unavailable-critical",
+                      "threshold-high": "1",
+                      "threshold-low": "0",
+                      "threshold-severity": "critical"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "granularity-period": "one-min",
+              "name": "eric-oss-jms-svc-amq-primary-unavailable-job",
+              "requested-job-state": "active",
+              "type": "threshold-job",
+              "measurement-reader": [
+                {
+                  "group-ref": "eric-esoa-th-alarm-group",
+                  "measurement-type-ref": "eric-oss-jms-svc-amq-primary-unavailable",
+                  "name": "eric-oss-jms-svc-amq-primary-unavailable-reader",
+                  "threshold-monitoring": [
+                    {
+                      "name": "eric-oss-jms-svc-amq-primary-unavailable-critical",
+                      "threshold-high": "1",
+                      "threshold-low": "0",
+                      "threshold-severity": "critical"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "granularity-period": "one-min",
+              "name": "eric-oss-jms-svc-amq-secondary-unavailable-job",
+              "requested-job-state": "active",
+              "type": "threshold-job",
+              "measurement-reader": [
+                {
+                  "group-ref": "eric-esoa-th-alarm-group",
+                  "measurement-type-ref": "eric-oss-jms-svc-amq-secondary-unavailable",
+                  "name": "eric-oss-jms-svc-amq-secondary-unavailable-reader",
+                  "threshold-monitoring": [
+                    {
+                      "name": "eric-oss-jms-svc-amq-secondary-unavailable-critical",
+                      "threshold-high": "1",
+                      "threshold-low": "0",
+                      "threshold-severity": "critical"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "group": [
+            {
+              "version": "0.0.1",
+              "name": "eric-esoa-th-alarm-group",
+              "measurement-type": [
+                {
+                  "id": "eric-esoa-common-topology-svc-unavailable",
+                  "aggregation": "sum",
+                  "collection-method": "gauge",
+                  "condition": "Raised: when an application instance goes down. Cleared: when an instance comes back up.",
+                  "description": "Raise alarm when an application goes down, and clear it once it's back up.",
+                  "measurement-status": "used",
+                  "multiplicity": 1,
+                  "reset-at-gran-period": false,
+                  "size": 8,
+                  "internal-metric-name": "kube_deployment_status_replicas_available",
+                  "internal-instrumentation-label": {
+                    "deployment": "eric-oss-cmn-topology-svc-core"
+                  },
+                  "internal-target-pattern": "deployment=[deployment]",
+                  "threshold-direction": "decreasing",
+                  "fm-alarm-type": "ProcessingErrorAlarm",
+                  "fault-name": "commonTopologyCoreUnavailable",
+                  "service-name": "eric-oss-cmn-topology-svc-core"
+                },
+                {
+                  "id": "eric-oss-jms-svc-amq-primary-unavailable",
+                  "aggregation": "sum",
+                  "collection-method": "gauge",
+                  "condition": "Raised: when an application instance goes down. Cleared: when an instance comes back up.",
+                  "description": "Raise alarm when an application goes down, and clear it once it's back up.",
+                  "measurement-status": "used",
+                  "multiplicity": 1,
+                  "reset-at-gran-period": false,
+                  "size": 8,
+                  "internal-metric-name": "kube_statefulset_replicas",
+                  "internal-instrumentation-label": {
+                    "statefulset": "eric-oss-jms-svc-amq-primary"
+                  },
+                  "internal-target-pattern": "statefulset=[statefulset]",
+                  "threshold-direction": "decreasing",
+                  "fm-alarm-type": "ProcessingErrorAlarm",
+                  "fault-name": "jmsAmqPrimaryUnavailable",
+                  "service-name": "eric-oss-jms-svc-amq-primary"
+                },
+                {
+                  "id": "eric-oss-jms-svc-amq-secondary-unavailable",
+                  "aggregation": "sum",
+                  "collection-method": "gauge",
+                  "condition": "Raised: when an application instance goes down. Cleared: when an instance comes back up.",
+                  "description": "Raise alarm when an application goes down, and clear it once it's back up.",
+                  "measurement-status": "used",
+                  "multiplicity": 1,
+                  "reset-at-gran-period": false,
+                  "size": 8,
+                  "internal-metric-name": "kube_statefulset_replicas",
+                  "internal-instrumentation-label": {
+                    "statefulset": "eric-oss-jms-svc-amq-secondary"
+                  },
+                  "internal-target-pattern": "statefulset=[statefulset]",
+                  "threshold-direction": "decreasing",
+                  "fm-alarm-type": "ProcessingErrorAlarm",
+                  "fault-name": "jmsAmqSecondaryUnavailable",
+                  "service-name": "eric-oss-jms-svc-amq-secondary"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+
+{{- end }}

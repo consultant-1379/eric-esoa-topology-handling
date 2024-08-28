@@ -1,0 +1,40 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+global:
+  hosts:
+    iam: ""
+    th: ""
+  registry:
+    # If deploying from the director node on a CCD environment, the url can be retrieved using:
+    # kubectl get ingress eric-lcm-container-registry-ingress -n kube-system -o jsonpath="{.spec.tls[*].hosts[0]}"; echo
+    url: ""
+    # Docker registry username.
+    username: ""
+    # Docker registry password
+    password: ""
+  support:
+    ipv6:
+      enabled: false
+  timezone: UTC
+  createClusterRoles: true
+
+eric-oss-common-topology-svc:
+  eric-oss-cmn-topology-svc-core:
+    # Default CTS user credentials
+    defaultUser:
+      username: ""
+      password: ""

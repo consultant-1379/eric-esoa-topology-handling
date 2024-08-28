@@ -1,0 +1,72 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{ if .Values.alarms.enabled }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "eric-esoa-topology-handling.name" . }}-fault-mappings
+  labels:
+    bss.ericsson.com/bamFaultmapDelegate: "true"
+    {{- include "eric-esoa-topology-handling.kubernetes-io-info" .| nindent 4 }}
+  annotations:
+    {{- include "eric-esoa-topology-handling.helm-annotations" .| nindent 4 }}
+data:
+  eric-oss-cmn-topology-svc-core.json: |-
+    [
+      {
+          "faultName": "commonTopologyCoreUnavailable",
+          "vendor": 193,
+          "code": 10002,
+          "specificProblem": "Common Topology service unavailable",
+          "category": "ProcessingErrorAlarm",
+          "probableCause": 356,
+          "defaultSeverity": "Critical",
+          "defaultDescription": "All replicas are down, service unavailable",
+          "defaultExpiration": 0
+      }
+    ]
+  eric-oss-jms-svc-amq-primary.json: |-
+    [
+      {
+          "faultName": "jmsAmqPrimaryUnavailable",
+          "vendor": 193,
+          "code": 10002,
+          "specificProblem": "JMS Primary service unavailable",
+          "category": "ProcessingErrorAlarm",
+          "probableCause": 356,
+          "defaultSeverity": "Critical",
+          "defaultDescription": "All replicas are down, service unavailable",
+          "defaultExpiration": 0
+      }
+    ]
+  eric-oss-jms-svc-amq-secondary.json: |-
+    [
+      {
+          "faultName": "jmsAmqSecondaryUnavailable",
+          "vendor": 193,
+          "code": 10002,
+          "specificProblem": "JMS Secondary service unavailable",
+          "category": "ProcessingErrorAlarm",
+          "probableCause": 356,
+          "defaultSeverity": "Critical",
+          "defaultDescription": "All replicas are down, service unavailable",
+          "defaultExpiration": 0
+      }
+    ]
+
+{{- end }}

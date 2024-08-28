@@ -1,0 +1,436 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+global:
+  hosts:
+    eric-esoa-topology-handling: ""
+  ingress:
+    baseHostname:
+    ingressClass:
+  networkPolicy:
+    enabled: true
+  registry:
+    url: armdocker.rnd.ericsson.se
+    imagePullPolicy: IfNotPresent
+    username: ARM_USERNAME
+    password: ARM_PASSWORD
+  pullSecret: k8s-registry-secret
+  security:
+    tls:
+      enabled: true
+  timezone: UTC
+  iam:
+    clientId: eo
+    adminSecret: eric-sec-access-mgmt-creds
+    userKey: kcadminid
+    passwordKey: kcpasswd
+    cacert:
+      secretName: iam-cacert-secret
+      key: tls.crt
+      filePath: iam/ca.crt
+  created-user:
+    username: cts-user
+    password: Ericsson123!
+  log:
+    streamingMethod: "indirect"
+  nodeSelector: {}
+  labels: {}
+  annotations: {}
+
+imageCredentials:
+  repoPath: #overrides repopath from eric-product-info.yaml
+  mainImage:
+    repoPath: #proj-orchestration-so
+    imagePullPolicy:
+    registry: {} #see default in eric-product-info.yaml
+    url:
+
+jvm:
+  heap:
+    min: "256m"
+    max: "512m"
+
+job:
+ backoffLimit: 8
+
+updateStrategy:
+  type: RollingUpdate
+
+# Configuration to control upper limit of graceful termination execution time
+terminationGracePeriodSeconds: 30
+
+nodeSelector: {}
+
+replicaCount: 1
+
+# Inter-pod anti-affinity policy to Kubernetes scheduler
+affinity:
+  podAntiAffinity: "soft"
+
+resources:
+  topologyHandler:
+    requests:
+      cpu: "300m"
+      memory: "512M"
+      ephemeral-storage:
+    limits:
+      cpu: "1000m"
+      memory: "800Mi"
+      ephemeral-storage:
+probes:
+  topologyHandler:
+  # Total readiness probe time: 80 seconds
+  #   Initial delay: 30 seconds
+  #   Retry attempts: 10 times x 5 seconds wait = 50 seconds
+    readinessProbe:
+      httpGet:
+        path: /actuator/health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      failureThreshold: 10
+      timeoutSeconds: 2
+    livenessProbe:
+      httpGet:
+        path: /actuator/health
+        port: 8080
+      initialDelaySeconds: 120
+      periodSeconds: 5
+      failureThreshold: 4
+    timeoutSeconds: 2
+  # Initial delay liveness probe: 140 seconds (+60 seconds after readiness probe max time)
+  # Retry attempts: 4 times x 5 seconds wait = 20 seconds
+  liveness:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 140
+    periodSeconds: 5
+    failureThreshold: 4
+    timeoutSeconds: 2
+
+logging:
+  format:
+    json: false
+
+server:
+  port: 8080
+
+prometheus:
+  path: /actuator/prometheus
+  scrape: true
+
+topologyHandler:
+  httpClient:
+    trustAllCertificates: false
+
+# Empty labels list for application deployment engineer to
+# add more labels (In Compliance with DR-D1121-068).
+labels: {}
+
+credentials:
+  postgresUser: appuser
+  applicationUser: appuser
+  managementUser: jboss
+  databaseUser: postgres
+
+ingress:
+  enabled: true
+  iccr:
+    enabled: true
+  tls:
+    enabled: true
+    passthrough: false
+    secretName: th-tls-secret
+  ingressClass:
+  fqdnPrefix: &fqdnPrefix th
+
+eric-oss-topo-trouble-mngmt-ui:
+  enabled: true
+  artemisConnection:
+    secretName: eric-oss-jms-svc-amq-credentials
+  serviceMesh:
+    enabled: true
+    tls:
+      enabled: true
+      mode: STRICT
+    ingress:
+      enabled: true
+      gwName: eric-oss-common-topology-svc-gateway
+      host: ""
+      matchPrefix:
+        - "/oss-core-ui"
+        - "/oss-core-admin-ui-help"
+  database:
+    type: edb
+    host: edb
+    instanceName: ctsdb
+    createDatabase: false
+    port: 5444
+    jndiHost: localhost
+    secretName: eric-esoa-topology-handling
+    schema:
+      secretName: eric-esoa-topology-handling
+    security:
+      customerTls:
+        sslMode: require
+  imageCredentials:
+    pullPolicy: Always
+    repoPath: proj-orchestration-so
+  jboss:
+    secretName: eric-esoa-topology-handling
+    mt:
+      serviceName: eric-oss-cmn-topology-svc-core
+      secretName: eric-esoa-topology-handling
+  jvm:
+    heap:
+      max: 9G
+      min: 6G
+  kubernetes:
+    readinessProbe:
+      failureThreshold: 90
+      initialDelaySeconds: 180
+      periodSeconds: 30
+  metrics:
+    enabled: true
+  resources:
+    eric-inventory-core:
+      limits:
+        cpu: 6
+        ephemeralStorage: 20Gi
+        memory: 12Gi
+      requests:
+        cpu: 1
+        ephemeralStorage: 8Gi
+        memory: 9Gi
+
+eric-oss-common-topology-svc:
+  log:
+    streamingMethod: "indirect"
+  serviceMesh:
+    ingress:
+      enabled: true
+      gwName: eric-oss-common-topology-svc-gateway
+      host: "*"
+      ctsGateway:
+        enabled: true
+        selector:
+          app: service-mesh-ingress-gateway
+        servers:
+        - hosts:
+          - "*"
+          mode: TLS
+          name: https-tls
+          port: 8443
+          protocol: HTTPS
+          settings:
+            secretName: gas-tls-secret
+    egress:
+      enabled: true
+      destinationRules:
+        kafka:
+          enabled: true
+          host: eric-esoa-platform-message-bus-kf
+          port: 9093
+          tlsMode: mTLS
+        eo-catalog:
+          enabled: true
+          host: eric-eo-catalog-manager
+          port: 8443
+          tlsMode: mTLS
+        eric-oss-domain-orch-adapter:
+          enabled: true
+          host: eric-oss-domain-orch-adapter
+          port: 8443
+          tlsMode: mTLS
+
+  eric-oss-jms-svc-amq:
+    spec:
+      securityContext:
+        readOnlyRootFilesystem: false
+    serviceMesh:
+      enabled: true
+    log:
+      streamingMethod: "indirect"
+    artemis:
+      persistence:
+      # set to storage class available in your cluster
+      storageClass: default
+
+  eric-oss-cmn-topology-svc-core:
+    spec:
+      securityContext:
+        readOnlyRootFilesystem: false
+    log:
+      streamingMethod: "indirect"
+    serviceMesh:
+      enabled: true
+      tls:
+        enabled: true
+        mode: STRICT
+        targets:
+          eo-catalog:
+            host: eric-eo-catalog-manager
+          kafka:
+            host: eric-esoa-platform-message-bus-kf
+            intermediateCa: eric-esoa-platform-message-bus-kf-client-ca
+      ingress:
+        enabled: true
+        gwName: eric-oss-common-topology-svc-gateway
+        host: ""
+    service:
+      port: 8080
+    database:
+      type: edb
+      regionalDbAlias: eai_install
+      host: edb
+      instanceName: ctsdb
+      createDatabase: false
+      port: 5444
+      secretName: eric-esoa-topology-handling
+      schema:
+        secretName: eric-esoa-topology-handling
+      security:
+        customerTls:
+          sslMode: require
+    jboss:
+      secretName: eric-esoa-topology-handling
+    jvm:
+      heap:
+        max: 11G
+        min: 11G
+    kubernetes:
+      livenessProbe:
+        failureThreshold: 30
+        initialDelaySeconds: 300
+        periodSeconds: 30
+      readinessProbe:
+        failureThreshold: 90
+        initialDelaySeconds: 180
+        periodSeconds: 30
+      replicas: 2
+      updateStrategy:
+        type: Recreate
+    metrics:
+      enabled: true
+    resources:
+      eric-inventory-core:
+        limits:
+          cpu: 6
+          ephemeralStorage: 20Gi
+          memory: 16Gi
+        requests:
+          cpu: 4
+          ephemeralStorage: 8Gi
+          memory: 12Gi
+    application:
+      properties:
+        platform:
+          persistence:
+            maxRowsReturned: 5000
+        exempt: true
+        osscore:
+          hazelcast:
+            port: 5801
+          eo:
+            url: "http://eric-eo-catalog-manager:8443"
+            catalog:
+              manager:
+                artifacts:
+                  path: "catalog-manager/v2/catalogs"
+                  artifact: http://eric-eo-catalog-manager:8443/catalog-manager/v1/artifacts
+          nd:
+            tmf645:
+              events:
+                enabled: "true"
+                kafka:
+                  producer:
+                    bootstrap:
+                      servers: "eric-esoa-platform-message-bus-kf:9093"
+                    client:
+                      id: "tmf645"
+                  destination:
+                    topic: "esd_tmf_645_notification_topic"
+            tmf641:
+              events:
+                enabled: "true"
+                kafka:
+                  producer:
+                    bootstrap:
+                      servers: "eric-esoa-platform-message-bus-kf:9093"
+                    client:
+                      id: "esd"
+                  destination:
+                    topic: "esd_notification_topic"
+          sbi:
+            adapter:
+              url: http://eric-oss-domain-orch-adapter:8443/sbi-adapter/v1/handle-sbi-request
+    apiGatewayRoute:
+
+# The PriorityClass object is a non-namespaced object that is defined by the cluster administrators prior to
+# POD deployment. If a Pod is referring to a non existing priority class, the Pod will be rejected.
+podPriority:
+  eric-esoa-topology-handling:
+    # PriorityClass name for VS Pods. If this parameter is set to an empty string, then no priorityClass will be
+    # specified in the POD definition, and the POD will be assigned the default Pod priority class.
+    # Configurable: Yes
+    # Mandatory: No
+    # Example: priorityClassName: "high-priority"
+    priorityClassName:
+
+tolerations: []
+
+alarms:
+  enabled: true
+
+certificates:
+  enabled: true
+  duration: 720h
+  renewBefore: 360h
+  ca:
+    enabled: true
+    issuer: eric-esoa-topology-handling-external-issuer
+    duration: 87600h # 10y
+    renewBefore: 8760h # 1y
+  subject:
+    organizations:
+      - "Ericsson"
+    organizationalUnits:
+      - "BOS"
+
+service-mesh-ingress-gateway:
+  log:
+    streamingMethod: "indirect"
+  service:
+    type: ClusterIP
+  autoScaling:
+    enabled: false
+  ports:
+    status-port:
+      port: 15021
+      targetPort: 15021
+      name: status-port
+      protocol: TCP
+      dscp: 0
+    https:
+      port: 8443
+      targetPort: 8443
+      name: https
+      protocol: TCP
+      dscp: 0
+
+eric-log-shipper:
+  enabled: false

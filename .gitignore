@@ -1,0 +1,88 @@
+*#
+*.iml
+*.ipr
+*.iws
+*.sw?
+*~
+.#*
+.*.md.html
+.DS_Store
+.classpath
+.factorypath
+.gradle
+.metadata
+.project
+.recommenders
+.settings
+.springBeans
+/build
+MANIFEST.MF
+_site/
+activemq-data
+bin
+build
+build.log
+dependency-reduced-pom.xml
+dump.rdb
+interpolated*.xml
+lib/
+manifest.yml
+overridedb.*
+target
+transaction-logs
+.flattened-pom.xml
+secrets.yml
+.gradletasknamecache
+.sts4-cache
+
+
+# Compiled source
+*.class
+*/bin/*
+
+
+# Eclipse files
+*.project
+*.classpath
+*.settings
+
+
+# Intellij files
+*.iml
+*.iws
+.idea
+
+# Packages
+*.jar
+
+# Maven build files
+target
+reports
+helm-home/
+helm-target/
+.m2/
+
+
+# ARQ tests
+
+# PMD
+*.pmd
+
+#Generated files
+*.ser
+
+# Merge files
+*.orig
+
+# Archetype support files
+install_bob.sh
+run.sh
+
+# CI
+adp-cicd-goals.properties
+artifact.properties
+helm-target/
+.m2/
+.sonar/
+.bob/
+

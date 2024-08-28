@@ -1,0 +1,58 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{ if and .Values.ingress.enabled .Values.ingress.iccr.enabled }}
+{{ if eq false .Values.global.security.tls.enabled }}
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  labels:
+  {{- include "eric-esoa-topology-handling.kubernetes-io-info" .| nindent 4 }}
+  annotations:
+  {{- include "eric-esoa-topology-handling.helm-annotations" .| nindent 4 }}
+    kubernetes.io/ingress.class: {{ template "eric-esoa-topology-handling.ingressClass" . }}
+  name: eric-oss-topo-trouble-mngmt-ui-proxy
+spec:
+  routes:
+  - conditions:
+    - prefix: /oss-core-ui
+    services:
+    - name: eric-oss-topo-trouble-mngmt-ui
+      {{- if eq (include "eric-esoa-topology-handling.global-security-tls-enabled" .) "true" }}
+      port: 8443
+      {{- else }}
+      port: 8080
+      {{- end }}
+  - conditions:
+    - prefix: /oss-core-ui-help
+    services:
+    - name: eric-oss-topo-trouble-mngmt-ui
+      {{- if eq (include "eric-esoa-topology-handling.global-security-tls-enabled" .) "true" }}
+      port: 8443
+      {{- else }}
+      port: 8080
+      {{- end }}
+  - conditions:
+    - prefix: /oss-core-admin-ui-help
+    services:
+    - name: eric-oss-topo-trouble-mngmt-ui
+      {{- if eq (include "eric-esoa-topology-handling.global-security-tls-enabled" .) "true" }}
+      port: 8443
+      {{- else }}
+      port: 8080
+      {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,24 @@
+apiVersion: v2
+dependencies:
+- name: eric-oss-common-topology-svc
+  repository: https://arm.sero.gic.ericsson.se/artifactory/proj-so-gs-all-helm
+  version: 1.0.0-7
+- name: eric-oss-topo-trouble-mngmt-ui
+  repository: https://arm.sero.gic.ericsson.se/artifactory/proj-so-gs-all-helm
+  version: 1.0.0+7
+- alias: service-mesh-ingress-gateway
+  condition: global.serviceMesh.enabled
+  name: eric-mesh-gateways
+  repository: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-gs-all-helm
+  version: 13.0.0+50
+- alias: eric-esoa-topology-handling-log-shipper
+  condition: eric-log-shipper.enabled
+  import-values:
+  - child: logShipper.config
+    parent: global.logShipper.config
+  name: eric-log-shipper
+  repository: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-gs-all-helm
+  version: 19.0.0+18
+description: Chart containing topology services for Topology Handling Applications.
+name: eric-esoa-topology-handling
+version: 0.5.4-1

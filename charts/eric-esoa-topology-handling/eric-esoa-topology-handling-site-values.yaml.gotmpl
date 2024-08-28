@@ -1,0 +1,23 @@
+global: {{ .Values | get "global" | toYaml | nindent 2 }}
+
+{{ if hasKey .Values .Release.Name }}
+  {{ .Values | get .Release.Name | toYaml }}
+{{ end }}
+
+{{ if .Values.global.serviceMesh.enabled }}
+{{ if .Values.global.security.tls.enabled }}
+
+eric-oss-cmn-topology-svc-core:
+  labels:
+    service-istio-secure: "true"
+
+eric-oss-jms-svc-amq-primary:
+  labels:
+    service-istio-secure: "true"
+
+eric-oss-jms-svc-amq-secondary:
+  labels:
+    service-istio-secure: "true"
+
+{{ end }}
+{{ end }}
